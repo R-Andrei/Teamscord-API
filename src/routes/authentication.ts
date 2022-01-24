@@ -81,4 +81,25 @@ router.post('/register', (req, res) => {
         });
 });
 
+router.post('/profile/update', (req, res) => {
+    const {
+        avatar,
+        language,
+    } = req.body;
+
+    // check if avatar or language exists
+    if (!avatar && !language) {
+        res.status(400).json({ error: 'avatar or language is required' });
+        return;
+    } else {
+        // update user profile
+        UserService.updateProfile(req.body)
+            .then((_: boolean) => {
+                res.status(200).send({ message: 'profile updated' });
+            }).catch((err: Error) => {
+                res.status(500).json({ error: err.message });
+            });
+    }
+});
+
 export default router;

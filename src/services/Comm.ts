@@ -46,6 +46,8 @@ class CommService implements ApiCommService {
                                     _id: '$$participant._id',
                                     email: '$$participant.email',
                                     username: '$$participant.username',
+                                    avatar: '$$participant.avatar',
+                                    language: '$$participant.language',
                                     tag: '$$participant.tag',
                                     status: '$$participant.status',
                                     createdAt: '$$participant.createdAt',
@@ -125,6 +127,7 @@ class CommService implements ApiCommService {
                             _id: '$sender._id',
                             email: '$sender.email',
                             username: '$sender.username',
+                            avatar: '$sender.avatar',
                             tag: '$sender.tag',
                             createdAt: '$sender.createdAt',
                             updatedAt: '$sender.updatedAt'
@@ -150,11 +153,17 @@ class CommService implements ApiCommService {
 
 
     private readonly mapResponseUser = (responseUser: ResponseUser): User => {
-        const { _id, username, tag, email, createdAt, updatedAt, status } = responseUser;
+        const { 
+            _id, username, tag, email, 
+            createdAt, updatedAt, 
+            status, avatar, language
+        } = responseUser;
         return {
             _id: _id.toString(),
             username,
+            avatar,
             tag,
+            language,
             email,
             status,
             createdAt: new Date(createdAt),
@@ -181,10 +190,11 @@ class CommService implements ApiCommService {
 
     private mapMessages = (messages: ResponseMessages): Messages => {
         return messages.map((message: ResponseMessage) => {
-            const { _id, username, tag, email, createdAt, updatedAt } = message.sender;
+            const { _id, username, tag, email, createdAt, updatedAt, avatar } = message.sender;
             const sender: MessageUser = {
                 _id: _id.toString(),
                 username,
+                avatar,
                 tag,
                 email,
                 createdAt: new Date(createdAt),

@@ -7,7 +7,8 @@ import {
     LoginUserProps,
     ResponseUserWithPassword,
     UserWithPassword,
-    RegisterUserProps
+    RegisterUserProps,
+    ProfileUpdateProps
 } from '../types/User';
 import { ApiUserProps, ApiUserService } from "./User.d";
 import { ApiDatabase } from "../database.d";
@@ -25,10 +26,16 @@ class UserService implements ApiUserService {
     }
 
     private readonly mapResponseUser = (responseUser: ResponseUser): User => {
-        const { _id, username, tag, email, createdAt, updatedAt, status } = responseUser;
+        const {
+            _id, username, tag, email,
+            createdAt, updatedAt, status,
+            avatar, language
+        } = responseUser;
         return {
             _id: _id.toString(),
             username,
+            avatar,
+            language,
             tag,
             status,
             email,
@@ -43,7 +50,13 @@ class UserService implements ApiUserService {
             if (userId) {
                 this.database.db.collection('users').findOne(
                     { _id: userId },
-                    { projection: { _id: 1, username: 1, tag: 1, email: 1, createdAt: 1, updatedAt: 1, status: 1 } },
+                    {
+                        projection: {
+                            _id: 1, username: 1, tag: 1,
+                            email: 1, createdAt: 1, updatedAt: 1,
+                            status: 1, avatar: 1, language: 1
+                        }
+                    },
                 ).then((user: ResponseUser) => {
                     const userObj: User = this.mapResponseUser(user);
                     resolve(userObj);
@@ -75,15 +88,27 @@ class UserService implements ApiUserService {
         return new Promise((resolve, reject) => {
             this.database.db.collection('users').findOne(
                 { email },
-                { projection: { _id: 1, username: 1, tag: 1, email: 1, createdAt: 1, updatedAt: 1, password: 1, status: 1 } },
+                {
+                    projection: {
+                        _id: 1, username: 1, tag: 1, email: 1,
+                        createdAt: 1, updatedAt: 1, password: 1,
+                        status: 1, avatar: 1, language: 1
+                    }
+                },
             ).then((user: ResponseUserWithPassword) => {
                 if (bcrypt.compareSync(password, user.password)) {
-                    const { _id, username, tag, email, createdAt, updatedAt, password, status } = user;
+                    const {
+                        _id, username, tag, email,
+                        createdAt, updatedAt, password,
+                        status, avatar, language
+                    } = user;
                     resolve({
                         _id: _id.toString(),
                         username,
                         password,
                         status,
+                        avatar,
+                        language,
                         tag,
                         email,
                         createdAt: new Date(createdAt),
@@ -105,7 +130,7 @@ class UserService implements ApiUserService {
             if (password === confirmPassword) {
                 this.database.db.collection('users').findOne(
                     { email },
-                    { projection: { _id: 1, username: 1, tag: 1, email: 1, createdAt: 1, updatedAt: 1, password: 1 } },
+                    { projection: { _id: 1, username: 1, tag: 1, email: 1, createdAt: 1, updatedAt: 1, password: 1, avatar: 1 } },
                 ).then((user: ResponseUserWithPassword) => {
                     if (!user) {
                         // generate tag
@@ -115,10 +140,13 @@ class UserService implements ApiUserService {
                             this.hashPassword(password)
                                 .then((hashedPassword: string) => {
                                     const status = 'offline';
+                                    const language = 'en';
                                     this.database.db.collection('users').insertOne({
                                         username,
                                         email,
                                         status,
+                                        language,
+                                        avatar: username,
                                         tag: validatedTag,
                                         password: hashedPassword,
                                         createdAt: new Date(),
@@ -131,6 +159,8 @@ class UserService implements ApiUserService {
                                             password: hashedPassword,
                                             tag: validatedTag,
                                             email,
+                                            avatar: username,
+                                            language,
                                             status,
                                             createdAt: new Date(),
                                             updatedAt: new Date()
@@ -165,6 +195,45 @@ class UserService implements ApiUserService {
         // const user = this.database.db.collection('users').updateOne(userProps);
 
         // console.log(user);
+    }
+
+    public readonly updateProfile = (profileData: ProfileUpdateProps): Promise<boolean> => {
+
+        return new Promise((resolve, reject) => {
+            const { _id, avatar, language } = profileData;
+
+            // first get user from users collection using _id from profileData
+            this.database.db.collection('users').findOne({ _id: new ObjectId(_id) })
+                .then((user: ResponseUser) => {
+                    // if user exists
+                    if (user) {
+                        const updateAvatar = (avatar) ? avatar : user.avatar;
+                        const updateLanguage = (language) ? language : user.language;
+                        // update avatar and language
+                        this.database.db.collection('users').updateOne({ _id: new ObjectId(_id) }, {
+                            $set: {
+                                avatar: updateAvatar,
+                                language: updateLanguage
+                            }
+                        }).then((updateResult) => {
+                            // if update was successful
+                            if (updateResult.modifiedCount === 1) {
+                                resolve(true);
+                            } else {
+                                reject(new Error('Update failed.'));
+                            }
+                        }).catch(err => {
+                            // update error
+                            reject(err);
+                        });
+                    } else {
+                        reject(new Error('User does not exist.'));
+                    }
+                }).catch(err => {
+                    // lookup user error
+                    reject(err);
+                });
+        });
     }
 
     public readonly deleteUser = (userProps: ApiUserProps) => {
