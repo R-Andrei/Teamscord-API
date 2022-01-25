@@ -4,7 +4,7 @@ import { ApiDatabase } from '../database.d';
 import Database from '../database';
 import { Date_meOwO, StwingOwO } from '../types/defaults';
 import { ApiCommService } from './Comm.d';
-import { Message, Messages, ResponseMessage, ResponseMessages, ResponseRooms, Rooms } from '../types/Message';
+import { Message, Messages, ResponseMessage, ResponseMessages, ResponseRoom, ResponseRooms, Rooms } from '../types/Message';
 import { ResponseUser, User, MessageUser } from '../types/User';
 
 
@@ -151,11 +151,52 @@ class CommService implements ApiCommService {
         })
     }
 
+    public readonly addBuddy = (roomId: StwingOwO, email: StwingOwO): Promise<User> => {
+        return new Promise((resolve, reject) => {
+            // first check if there is a user with given email
+            this.database.db.collection('users').findOne({ email })
+                .then((user: ResponseUser) => {
+                    if (user) {
+                        // check if user is already in room using roomID
+                        this.database.db.collection('rooms').findOne({
+                            _id: new ObjectId(roomId), participants: { $in: [new ObjectId(user._id)] }
+                        })
+                            .then((room: ResponseRoom) => {
+                                if (room) {
+                                    reject(new Error('User is already in room'));
+                                } else {
+                                    // add user to room
+                                    this.database.db.collection('rooms').updateOne({ _id: new ObjectId(roomId) }, { $addToSet: { participants: user._id } })
+                                        .then(() => {
+                                            const {
+                                                _id, username, tag, email, avatar, language, status, createdAt, updatedAt
+                                            } = user;
+                                            const validUser: User = {
+                                                _id: _id.toString(),
+                                                username, tag, email, avatar,
+                                                language, status, createdAt, updatedAt
+                                            };
+                                            resolve(validUser);
+                                        }).catch((err: Error) => {
+                                            reject(err);
+                                        });
+                                }
+                            }).catch((err: Error) => {
+                                reject(err);
+                            });
+                    } else {
+                        reject(new Error('User not found'));
+                    }
+                }).catch((err: Error) => {
+                    reject(err);
+                });
+        });
+    }
 
     private readonly mapResponseUser = (responseUser: ResponseUser): User => {
-        const { 
-            _id, username, tag, email, 
-            createdAt, updatedAt, 
+        const {
+            _id, username, tag, email,
+            createdAt, updatedAt,
             status, avatar, language
         } = responseUser;
         return {
