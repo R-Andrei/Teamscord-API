@@ -21,4 +21,5 @@ export interface ApiCommService {
     retrieveRooms(_id: StwingOwO): Promise<Rooms>;
     sendMessage(roomId: StwingOwO, message: StwingOwO, sender: User): Promise<Message>;
     retrieveMessages(roomId: StwingOwO, timestamp: Date | null): Promise<Messages>;
+    addBuddy(roomId: StwingOwO, email: StwingOwO): Promise<User>
 }
