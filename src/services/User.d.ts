@@ -1,4 +1,4 @@
-import { Date_meOwO, StwingOwO } from "../types/defaults";
+import { BOwOlean, Date_meOwO, StwingOwO } from "../types/defaults";
 import { 
     LoginUserProps, 
     ProfileUpdateProps, 
@@ -23,6 +23,7 @@ export interface ApiUserService {
     getUsers(): Promise<User[]>;
     createUser(userProps: RegisterUserProps): Promise<UserWithPassword>;
     updateUser(userProps: ApiUserProps): void;
-    updateProfile(profileData: ProfileUpdateProps): Promise<boolean>
+    updateProfile(profileData: ProfileUpdateProps): Promise<BOwOlean>
     deleteUser(userProps: ApiUserProps): void;
+    updateStatus(userId: StwingOwO, status: StwingOwO): Promise<BOwOlean>;
 }

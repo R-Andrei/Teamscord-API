@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { Message, Messages } from '../types/Message';
+import { Message, Messages, Room } from '../types/Message';
 import CommService from '../services/Comm';
 
 
@@ -17,7 +17,7 @@ router.post('/rooms/retrieve', (req, res) => {
     });
 });
 
-router.post('/rooms/add-buddy', (req, res) => {
+router.post('/rooms/add', (req, res) => {
     const { roomId, email } = req.body;
     console.log(roomId, email);
     if (!roomId || !email) {
@@ -29,6 +29,32 @@ router.post('/rooms/add-buddy', (req, res) => {
         console.log(err);
         res.status(500).json({ error: err.message });
     });
+});
+
+router.post('/rooms/create', (req, res) => {
+    const { userId } = req.body;
+    if (!userId) {
+        return res.status(400).json({ error: 'Missing userId fields' });
+    }
+    CommService.createRoom(userId).then((response: Room) => {
+        res.status(200).send(response);
+    }).catch((err: Error) => {
+        res.status(500).json({ error: err.message });
+    });
+});
+
+router.post('/rooms/retrieve', (req, res) => {
+    const { roomId } = req.body;
+    if (!roomId) {
+        return res.status(400).json({ error: 'Missing required fields' });
+    } 
+    CommService.retrieveRoom(roomId)
+        .then((response: Room) => {
+            res.status(200).send(response);
+        })
+        .catch((err: Error) => {
+            res.status(500).json({ error: err.message });
+        });
 });
 
 router.post('/message/retrieve', (req, res) => {

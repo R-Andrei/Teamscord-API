@@ -89,13 +89,34 @@ router.post('/profile/update', (req, res) => {
 
     // check if avatar or language exists
     if (!avatar && !language) {
-        res.status(400).json({ error: 'avatar or language is required' });
+        res.status(400).json({ error: 'Avatar or Language is required' });
         return;
     } else {
         // update user profile
         UserService.updateProfile(req.body)
             .then((_: boolean) => {
                 res.status(200).send({ message: 'profile updated' });
+            }).catch((err: Error) => {
+                res.status(500).json({ error: err.message });
+            });
+    }
+});
+
+router.post('/profile/update-status', (req, res) => {
+    const {
+        userId,
+        status,
+    } = req.body;
+
+    // check if avatar or language exists
+    if (!userId || !status) {
+        res.status(400).json({ error: 'Insufficient data.' });
+        return;
+    } else {
+        // update user profile
+        UserService.updateStatus(userId, status)
+            .then((_: boolean) => {
+                res.status(200).send({ message: 'Status updated.' });
             }).catch((err: Error) => {
                 res.status(500).json({ error: err.message });
             });

@@ -4,7 +4,7 @@ import { ApiDatabase } from '../database.d';
 import Database from '../database';
 import { Date_meOwO, StwingOwO } from '../types/defaults';
 import { ApiCommService } from './Comm.d';
-import { Message, Messages, ResponseMessage, ResponseMessages, ResponseRoom, ResponseRooms, Rooms } from '../types/Message';
+import { Message, Messages, ResponseMessage, ResponseMessages, ResponseRoom, ResponseRooms, Room, Rooms } from '../types/Message';
 import { ResponseUser, User, MessageUser } from '../types/User';
 
 
@@ -67,6 +67,60 @@ class CommService implements ApiCommService {
                         reject(new Error('Room not found'));
                     }
                 }).catch((err: Error) => {
+                    reject(err);
+                });
+        });
+    }
+
+    public readonly retrieveRoom = (roomId: StwingOwO): Promise<Room> => {
+        return new Promise<Room>((resolve, reject) => {
+            this.database.db.collection('rooms').aggregate([
+                {
+                    $match: {
+                        _id: { $eq: new ObjectId(roomId) }
+                    }
+                },
+                {
+                    $lookup: {
+                        from: 'users',
+                        localField: 'participants',
+                        foreignField: '_id',
+                        as: 'participants'
+                    }
+                },
+                {
+                    $project: {
+                        _id: 1,
+                        name: 1,
+                        participants: {
+                            $map: {
+                                input: '$participants',
+                                as: 'participant',
+                                in: {
+                                    _id: '$$participant._id',
+                                    email: '$$participant.email',
+                                    username: '$$participant.username',
+                                    avatar: '$$participant.avatar',
+                                    language: '$$participant.language',
+                                    tag: '$$participant.tag',
+                                    status: '$$participant.status',
+                                    createdAt: '$$participant.createdAt',
+                                    updatedAt: '$$participant.updatedAt'
+                                }
+                            }
+                        },
+                        createdAt: 1,
+                        updatedAt: 1
+                    }
+                }]).toArray()
+                .then((rooms: ResponseRooms) => {
+                    if (rooms) {
+                        resolve(this.mapRooms(rooms)[0]);
+                    } else {
+                        reject(new Error('Room not found'));
+                    }
+                })
+                .catch((err: Error) => {
                     reject(err);
                 });
         });
@@ -149,6 +203,34 @@ class CommService implements ApiCommService {
                     reject(err);
                 });
         })
+    }
+
+    public readonly createRoom = (userId: StwingOwO): Promise<Room> => {
+        return new Promise<Room>((resolve, reject) => {
+            const userId_: ObjectId = new ObjectId(userId);
+            const createdAt: Date_meOwO = new Date();
+            this.database.db.collection('rooms').insertOne({
+                participants: [userId_],
+                name: null,
+                createdAt,
+                updatedAt: createdAt
+            }).then((result: InsertOneResult) => {
+                const { insertedId } = result;
+                resolve({
+                    _id: insertedId.toString(),
+                    name: null,
+                    // we don't need to return a valid participant because
+                    // we'll create the valid object in the client
+                    // with the user who initiated the creation
+                    participants: [],
+                    messages: [],
+                    createdAt,
+                    updatedAt: createdAt
+                });
+            }).catch((err: Error) => {
+                reject(err);
+            });
+        });
     }
 
     public readonly addBuddy = (roomId: StwingOwO, email: StwingOwO): Promise<User> => {
