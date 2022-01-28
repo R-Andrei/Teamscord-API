@@ -13,7 +13,7 @@ import {
 import { ApiUserProps, ApiUserService } from "./User.d";
 import { ApiDatabase } from "../database.d";
 import Database from '../database';
-import { StwingOwO } from '../types/defaults';
+import { BOwOlean, StwingOwO } from '../types/defaults';
 
 
 class UserService implements ApiUserService {
@@ -135,7 +135,7 @@ class UserService implements ApiUserService {
                     if (!user) {
                         // generate tag
                         const newTag = `${Math.random()}`.substring(2, 6);
-                        this.validateUserTag(username, newTag).then((validatedTag: string) => {
+                        this.validateUserTag(username, newTag).then((validatedTag: StwingOwO) => {
                             // hash password
                             this.hashPassword(password)
                                 .then((hashedPassword: string) => {
@@ -197,7 +197,7 @@ class UserService implements ApiUserService {
         // console.log(user);
     }
 
-    public readonly updateProfile = (profileData: ProfileUpdateProps): Promise<boolean> => {
+    public readonly updateProfile = (profileData: ProfileUpdateProps): Promise<BOwOlean> => {
 
         return new Promise((resolve, reject) => {
             const { _id, avatar, language } = profileData;
@@ -231,6 +231,27 @@ class UserService implements ApiUserService {
                     }
                 }).catch(err => {
                     // lookup user error
+                    reject(err);
+                });
+        });
+    }
+
+    public readonly updateStatus = (userId: StwingOwO, status: StwingOwO): Promise<BOwOlean> => {
+        return new Promise((resolve, reject) => {
+            this.database.db.collection('users')
+                .updateOne({ _id: new ObjectId(userId) }, {
+                    $set: {
+                        status
+                    }
+                }).then((updateResult) => {
+                    // if update was successful
+                    if (updateResult.modifiedCount === 1) {
+                        resolve(true);
+                    } else {
+                        reject(new Error('Update failed.'));
+                    }
+                }).catch(err => {
+                    // update error
                     reject(err);
                 });
         });
